@@ -180,6 +180,7 @@
     }
   </style>
 </head>
+<script src="data.js"></script>
 <script>
 // ====== ÉTAT GLOBAL ======
 const state = {
