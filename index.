@@ -16,9 +16,8 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { height: 100%; margin: 0; padding: 0; }
     body {
-      margin: 0;
       background: radial-gradient(1200px 700px at 20% 10%, #0f1117 0%, var(--bg) 60%);
       color: var(--ink);
       font: 16px/1.6 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial;
@@ -45,15 +44,8 @@
       margin-bottom: 10px;
     }
 
-    .title {
-      font-weight: 800;
-      letter-spacing: .4px;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
-    }
+    .title { font-weight: 800; letter-spacing: .4px; }
+    .subtitle { color: var(--muted); font-size: 14px; }
 
     .state {
       display: flex;
@@ -76,34 +68,13 @@
       border: 1px solid var(--line);
     }
 
-    .act {
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: .5px;
-      margin-bottom: 4px;
-    }
+    .act { color: var(--accent); font-weight: 700; margin-bottom: 4px; }
+    .scene { font-size: 22px; font-weight: 700; margin: 2px 0 8px; }
 
-    .scene {
-      font-size: 22px;
-      font-weight: 700;
-      margin: 2px 0 8px;
-    }
+    #text, #adv { white-space: pre-wrap; margin: 8px 0 12px; }
+    #adv { color: var(--accent2); font-style: italic; }
 
-    #text, #adv {
-      white-space: pre-wrap;
-      margin: 8px 0 12px;
-    }
-
-    #adv {
-      color: var(--accent2);
-      font-style: italic;
-    }
-
-    .choices {
-      display: grid;
-      gap: 10px;
-      margin-top: 6px;
-    }
+    .choices { display: grid; gap: 10px; margin-top: 6px; }
 
     .choices button {
       text-align: left;
@@ -180,316 +151,6 @@
     }
   </style>
 </head>
-<script src="data.js"></script>
-<script>
-// ====== ÉTAT GLOBAL ======
-const state = {
-  act: 1,
-  scene: 'A1_S1',
-  tone: 'lucide', // lucide | blesse | febrile
-  stack: [], // historique pour "Retour"
-  flags: {
-    desirDeReconnaissance: false,
-    accepteLaHonte: false,
-    doubleFormateur: false,
-    aBriseLesMachines: false,
-    aChoisiMemoire: null, // true = mémoire, false = oubli, null = incertitude
-  },
-  journal: []
-};
-
-const el = {
-  pillAct: document.getElementById('pill-act'),
-  pillTone: document.getElementById('pill-tone'),
-  act: document.getElementById('act'),
-  scene: document.getElementById('scene'),
-  text: document.getElementById('text'),
-  adv: document.getElementById('adv'),
-  choices: document.getElementById('choices'),
-  next: document.getElementById('btn-next'),
-  back: document.getElementById('btn-back'),
-  restart: document.getElementById('btn-restart'),
-  journal: document.getElementById('journal'),
-  footer: document.getElementById('footer'),
-  card: document.getElementById('card')
-};
-
-const TONES = { lucide: 'lucide', blesse: 'blessé', febrile: 'fébrile' };
-
-function setTone(t){ state.tone = t; el.pillTone.textContent = `Tonalité : ${TONES[t]||t}`; }
-function setAct(a){ state.act = a; el.pillAct.textContent = `Acte ${a}`; }
-function push(){ state.stack.push(JSON.parse(JSON.stringify(state))); }
-function pop(){ if(!state.stack.length) return; const p = state.stack.pop(); Object.assign(state, p); render(); }
-function log(line){ state.journal.push(line); el.journal.textContent = state.journal.slice(-6).join('\n'); }
-function flash(){ el.card.classList.remove('fade'); void el.card.offsetWidth; el.card.classList.add('fade'); }
-
-// ====== BIBLIOTHÈQUE DE SCÈNES ======
-// Format: key: { act, title, text, adv?, choices:[{label,next,effect?}], onEnter? }
-const S = {
-
-  // ---------- ACTE I : Le Sommeil du Monde ----------
-  A1_S1: { act:1, title:'Le Briefing',
-    text:`Bureau vitré, open-space trop calme. On m’a embauché pour « réduire les dérives émotionnelles ».
-J’observe les tics, les micro-mensonges, la peur sous les sourires. Je peux appliquer la méthode, écouter, ou tricher.`,
-    choices:[
-      {label:'Appliquer la méthode — disséquer, diagnostiquer, classer.', next:'A1_S1a', effect(){ setTone('lucide'); log('J’ai choisi la netteté au risque de devenir froid.'); }},
-      {label:'Écouter les douleurs — perdre du pouvoir, gagner du réel.', next:'A1_S1b', effect(){ setTone('blesse'); log('J’ai écouté au lieu de conclure.'); }},
-      {label:'Tricher au rapport — protéger les fragiles, mentir à soi.', next:'A1_S1c', effect(){ setTone('febrile'); state.flags.desirDeReconnaissance=true; log('J’ai maquillé la vérité pour sauver des visages.'); }}
-    ]
-  },
-  A1_S1a:{ act:1, title:'…Mi-humain', text:'La lucidité sans compassion coupe net. Je deviens utile, pas humain.', choices:[{label:'Continuer', next:'A1_S2'}]},
-  A1_S1b:{ act:1, title:'…Présence', text:'Le réel parle si on se tait. Mon autorité baisse, leur vérité monte.', choices:[{label:'Continuer', next:'A1_S2'}]},
-  A1_S1c:{ act:1, title:'…Masque propre', text:'J’ai protégé au prix d’un mensonge. Le masque colle mieux que la peau.', choices:[{label:'Continuer', next:'A1_S2'}]},
-
-  A1_S2:{ act:1, title:"L’Entretien",
-    text:`Un influenceur me demande de résumer la souffrance en dix secondes. Format viral. Je sens le piège : simplifier, refuser, renverser.`,
-    choices:[
-      {label:'Simplifier — devenir populaire, perdre du sens.', next:'A1_S2a', effect(){ state.flags.desirDeReconnaissance=true; log('J’ai simplifié la douleur pour passer.'); }},
-      {label:'Refuser le format — passer pour élitiste.', next:'A1_S2b', effect(){ setTone('lucide'); log('J’ai refusé de réduire l’âme à un slogan.'); }},
-      {label:"Renverser l’interview — analyser l’intervieweur.", next:'A1_S2c', effect(){ setTone('blesse'); log('J’ai retourné la caméra. Ça a ri, pas moi.'); }}
-    ]
-  },
-  A1_S2a:{ act:1, title:'…Viral', text:'Les chiffres montent. Le sens descend.', choices:[{label:'Continuer', next:'A1_S3'}]},
-  A1_S2b:{ act:1, title:'…Hors-format', text:'Ils disent : « prétentieux ». Je respire mieux.', choices:[{label:'Continuer', next:'A1_S3'}]},
-  A1_S2c:{ act:1, title:'…Renversement', text:'Je l’ai mis à nu. Le public a applaudi la cruauté.', choices:[{label:'Continuer', next:'A1_S3'}]},
-
-  A1_S3:{ act:1, title:'Le Patient Zéro',
-    text:`Clinique privée. Une femme persuadée que tout est mensonge. Plus je questionne, plus ses réponses anticipent les miennes. Elle me décrit, mot pour mot.`,
-    choices:[
-      {label:'Continuer — je deviens mon propre patient.', next:'A1_S3a', effect(){ setTone('febrile'); log('La frontière thérapeute/patient s’est dissoute.'); }},
-      {label:'Fuir — son visage prend le mien.', next:'A1_S3b', effect(){ log('J’ai fui ; le miroir a couru plus vite.'); }},
-      {label:'Admettre — « je suis toi ».', next:'A1_S3c', effect(){ setTone('blesse'); log('L’aveu a éteint la pièce et allumé quelque chose.'); }}
-    ]
-  },
-  A1_S3a:{ act:1, title:'…Renversement', text:'Mes questions me dissèquent. Je note mon propre dossier.', choices:[{label:'Continuer', next:'A1_S4'}]},
-  A1_S3b:{ act:1, title:'…Fuite immobile', text:'Partir ne bouge rien. Le visage reste, en moi.', choices:[{label:'Continuer', next:'A1_S4'}]},
-  A1_S3c:{ act:1, title:'…Aveu', text:'Le noir a fait de la place. J’entends mieux.', choices:[{label:'Continuer', next:'A1_S4'}]},
-
-  A1_S4:{ act:1, title:'Le Tribunal Moral',
-    text:`Salle transformée en procès public. On me juge pour « analyse non conforme ». Quand je parle, mes mots se tordent en slogans. Qui juge ?`,
-    adv:'« Ils n’existent que parce que tu as besoin d’eux pour te sentir pur. »',
-    choices:[
-      {label:'Plaider coupable — apaiser la foule.', next:'A1_S4a', effect(){ log('J’ai offert ma faute pour calmer leur faim.'); }},
-      {label:'Plaider innocence — attiser la haine.', next:'A1_S4b', effect(){ log('J’ai gardé la ligne et perdu la salle.'); }},
-      {label:'Demander « Qui juge ? »', next:'A1_S4c', effect(){ setTone('lucide'); log('Question posée : le décor a vacillé.'); }}
-    ]
-  },
-  A1_S4a:{ act:1, title:'…Apaisement', text:'Le calme acheté a l’odeur du renoncement.', choices:[{label:'Continuer', next:'A1_S5'}]},
-  A1_S4b:{ act:1, title:'…Braise', text:'La foule a besoin d’un ennemi ; me voilà utile.', choices:[{label:'Continuer', next:'A1_S5'}]},
-  A1_S4c:{ act:1, title:'…Silence', text:'Les visages se sont dissous. Il ne reste que la question.', choices:[{label:'Continuer', next:'A1_S5'}]},
-
-  A1_S5:{ act:1, title:'Le Corridor des Reflets',
-    text:`Couloir de verre. Chaque porte ouvre un souvenir où j’ai trahi ma lucidité. L’Adversaire murmure à ma cadence.`,
-    adv:'« Tu n’as jamais voulu les réveiller ; tu voulais qu’ils t’admirent éveillé. »',
-    choices:[
-      {label:'Nier — redevenir spectateur.', next:'A2_S1', effect(){ setAct(2); log('J’ai nié ; le monde m’a repris.'); }},
-      {label:'Admettre — laisser la lumière brûler.', next:'A2_S1', effect(){ setAct(2); state.flags.accepteLaHonte=true; log('J’ai admis. Ça brûle bien, ça éclaire mieux.'); }},
-      {label:'Questionner — et si l’éveil était un rêve ?', next:'A2_S1', effect(){ setAct(2); setTone('febrile'); log('J’ai ouvert la porte du doute, elle donne vers l’intérieur.'); }}
-    ]
-  },
-
-  // ---------- ACTE II : La Chasse Intérieure ----------
-  A2_S1:{ act:2, title:'Le Cabinet',
-    text:`Pièce nue, vitre sans tain. Sur la table : mon dossier annoté par… moi. La voix : « Quand tu aides, c’est compassion — ou dette envers tes blessures ? »`,
-    choices:[
-      {label:'Falsifier le dossier — corriger mon image.', next:'A2_S1a', effect(){ setTone('lucide'); log('J’ai tenté de réécrire qui je suis. Le texte a résisté.'); }},
-      {label:'Répondre — « je ne veux pas devenir ce qu’on m’a fait ».', next:'A2_S1b', effect(){ setTone('blesse'); log('La voix a dit : “Trop tard, c’est ta forme.”'); }},
-      {label:'Fermer — refuser le verdict.', next:'A2_S1c', effect(){ setTone('febrile'); log('La vitre a reflété un applaudissement lent. De moi.'); }}
-    ]
-  },
-  A2_S1a:{ act:2, title:'…Résistance du texte', text:'Les lettres se sont réécrites comme avant. Le réel a de la mémoire.', choices:[{label:'Continuer', next:'A2_S2'}]},
-  A2_S1b:{ act:2, title:'…Forme acquise', text:'Le « trop tard » sonnait juste. Je respire dedans.', choices:[{label:'Continuer', next:'A2_S2'}]},
-  A2_S1c:{ act:2, title:'…Applaudissements', text:'Mon reflet m’aime quand je ne lis pas.', choices:[{label:'Continuer', next:'A2_S2'}]},
-
-  // Théâtre (version préférée : le silence comme première vérité)
-  A2_S2:{ act:2, title:'Le Théâtre de la Mémoire',
-    text:`Projecteurs. Des acteurs rejouent mes « bonnes actions ». Chaque scène finit par : « Et qu’as-tu vraiment cherché ? »`,
-    choices:[
-      {label:'Interrompre — « c’est faux ! »', next:'A2_S2a', effect(){ log('Ils ont ri ensemble. J’ai crié seul.'); }},
-      {label:'Jouer mon rôle — improviser moi-même.', next:'A2_S2b', effect(){ log('Ma voix a pris la sienne. Les mots se sont vidés.'); }},
-      {label:'Me taire — laisser tomber.', next:'A2_S2c', effect(){ state.flags.aversionAuMensonge=true; log('Silence tenu. Première vérité dite sans mots.'); }}
-    ]
-  },
-  A2_S2a:{ act:2, title:'…Faux/vrai', text:'Le faux était mon besoin de vrai, et inversement.', choices:[{label:'Continuer', next:'A2_S3'}]},
-  A2_S2b:{ act:2, title:'…Improvisation', text:'J’ai joué. C’est lui qui a eu l’applaudimètre.', choices:[{label:'Continuer', next:'A2_S3'}]},
-  A2_S2c:{ act:2, title:'…Silence', text:'Le rire s’est arrêté. La pièce a brûlé sans chaleur.', choices:[{label:'Continuer', next:'A2_S3'}]},
-
-  A2_S3:{ act:2, title:'Le Dialogue des Doubles',
-    text:`Chambre d’hôtel, deux verres, deux moi. Il me regarde avec une pitié amusée. Je dis : « Si je te détruis, je serai libre. »`,
-    adv:'« Si tu me détruis, tu feras ce que font tous les hommes quand ils veulent être purs : tu te prendras pour Dieu. Pas celui qui pardonne, non — celui qui juge, seul, en silence, persuadé qu’il ne tombera plus jamais. Et c’est là que je renaîtrai. »',
-    choices:[
-      {label:'Le contredire — démonter sa logique, s’y perdre.', next:'A2_S3a', effect(){ log('À force d’argumenter, j’ai parlé avec sa bouche.'); }},
-      {label:'Le provoquer — « Tu m’as appris à haïr le mal, pas à aimer le bien. »', next:'A2_S3b', effect(){ state.flags.doubleFormateur=true; log('Il s’est tu, presque attendri.'); }},
-      {label:'L’écouter — le laisser me former sans régner.', next:'A2_S3c', effect(){ state.flags.doubleFormateur=true; setTone('lucide'); log('Je l’ai écouté jusqu’à entendre ma part utile en lui.'); }}
-    ]
-  },
-  A2_S3a:{ act:2, title:'…Réfutation circulaire', text:'Le débat était un miroir sans tain. J’étais des deux côtés.', choices:[{label:'Continuer', next:'A2_S4'}]},
-  A2_S3b:{ act:2, title:'…Provocation', text:'Le rire a cessé. Quelque chose a bougé sans victoire.', choices:[{label:'Continuer', next:'A2_S4'}]},
-  A2_S3c:{ act:2, title:'…Formation', text:'« Laisse-moi exister sans régner », a-t-il dit. J’ai compris.', choices:[{label:'Continuer', next:'A2_S4'}]},
-
-  A2_S4:{ act:2, title:'Le Couloir des Signatures',
-    text:`Des milliers de serments, tous signés de moi. « Je ne recommencerai plus. » « Je dirai la vérité. » « Je changerai demain. »`,
-    adv:'« Tu n’as jamais tenu tes promesses ; tu les as collectionnées. Chaque engagement t’a servi de maquillage moral. »',
-    choices:[
-      {label:'Détacher une feuille — la laisser coller à la peau.', next:'A2_S4a', effect(){ log('La phrase a traversé la poitrine comme une aiguille.'); }},
-      {label:'Tout arracher — bruit assourdissant de papier.', next:'A2_S4b', effect(){ log('Le couloir s’est allongé en se vidant.'); }},
-      {label:'Signer une dernière fois — « Je ne jure plus rien. »', next:'A2_S4c', effect(){ setTone('lucide'); log('Première signature honnête. La plume pesait lourd.'); }}
-    ]
-  },
-  A2_S4a:{ act:2, title:'…Empreinte', text:'Le papier voulait ma peau. Je lui ai laissé un peu de sang.', choices:[{label:'Continuer', next:'A2_S5'}]},
-  A2_S4b:{ act:2, title:'…Infini', text:'Détruire a recréé. Le système aimait l’effort.', choices:[{label:'Continuer', next:'A2_S5'}]},
-  A2_S4c:{ act:2, title:'…Honnêteté', text:'Ne plus jurer : enfin commencer.', choices:[{label:'Continuer', next:'A2_S5'}]},
-
-  A2_S5:{ act:2, title:'Le Laboratoire du Désir',
-    text:`Capteurs, écrans. On mesure mes vertus comme des réflexes. Je vois « Vérité », « Amour », « Pouvoir » s’allumer sur l’EEG.`,
-    adv:'« Ce que tu appelles élévation est une récompense. Et pourtant tu choisis. Voilà ta liberté. »',
-    choices:[
-      {label:'Détruire les machines — un acte gratuit.', next:'A3_S1', effect(){ state.flags.aBriseLesMachines=true; setAct(3); log('Verre brisé, cœur plus doux.'); }},
-      {label:'Admettre la mécanique — et choisir quand même le bien.', next:'A3_S1', effect(){ setAct(3); setTone('lucide'); log('« Oui, c’est ainsi… et pourtant je choisis. »'); }},
-      {label:'Demander à l’Adversaire : qu’est-ce qui te fait jouir ?', next:'A3_S1', effect(){ setAct(3); log('« Te voir croire que tu peux me vaincre », a-t-il souri.'); }}
-    ]
-  },
-
-  // ---------- ACTE III : Le Cri des Âmes ----------
-  A3_S1:{ act:3, title:'La Place des Échos',
-    text:`Écrans, montages, rires. Un hashtag me cloue. Ils condamnent le ton, pas la question.`,
-    choices:[
-      {label:'Crier plus net — sincérité brute, compassion sociale perdue.', next:'A3_S2', effect(){ log('Deux ont pleuré. Mille ont hué.'); }},
-      {label:'Parler à une seule personne — viser un cœur.', next:'A3_S2', effect(){ log('Une conscience a vacillé. Le reste m’a nommé incendiaire.'); }},
-      {label:'Se taire et écrire — devenir graffiti.', next:'A3_S2', effect(){ log('Mes lettres ont circulé comme un virus doux.'); }}
-    ]
-  },
-
-  A3_S2:{ act:3, title:'L’Offre de la Tour',
-    text:`La Tour me propose de m’intégrer. Influence contre docilité. L’Adversaire sourit hors-champ.`,
-    choices:[
-      {label:'Accepter — changer le dedans, se lisser.', next:'A3_S3', effect(){ log('J’ai gagné des leviers, perdu des angles.'); }},
-      {label:'Refuser publiquement — pureté, hors-jeu.', next:'A3_S3', effect(){ log('On m’a appelé radical. J’ai gardé ma respiration.'); }},
-      {label:'Entrer pour saboter — double identité.', next:'A3_S3', effect(){ log('Résultats ambigus. La méthode m’a mordu.'); }}
-    ]
-  },
-
-  A3_S3:{ act:3, title:'La Cage des Témoins',
-    text:`Mes proches défilent. On projette mes colères et mes fuites. Aimaient-ils moi ou mon masque ?`,
-    choices:[
-      {label:'Exiger la vérité — même blessante.', next:'A3_S4', effect(){ log('Certains ont rompu, d’autres ont menti pour me sauver.'); }},
-      {label:'Pardonner publiquement — nommer et absoudre.', next:'A3_S4', effect(){ log('Ils ont dit « illuminé ». J’ai dormi sans rancœur.'); }},
-      {label:'Couper — solitude comme discipline.', next:'A3_S4', effect(){ log('Le calme a grandi. Les rumeurs aussi.'); }}
-    ]
-  },
-
-  A3_S4:{ act:3, title:'Le Procès du Silence',
-    text:`Experts, plateaux, diagnostics. On me colle l’étiquette qui rassure. Je laisse parler la phrase que je ne voulais pas entendre.`,
-    adv:'« Si tu me détruis, tu feras ce que font tous les hommes quand ils veulent être purs : tu te prendras pour Dieu. Pas celui qui pardonne, non — celui qui juge, seul, en silence, persuadé qu’il ne tombera plus jamais. Et c’est là que je renaîtrai. »',
-    choices:[
-      {label:'Tout avouer — vérité nue, camisole douce.', next:'A3_S5', effect(){ log('On m’a enfermé pour observation. Je n’ai jamais été aussi clair.'); }},
-      {label:'Jouer la normalité — liberté publique, voix amputée.', next:'A3_S5', effect(){ log('Ils m’ont rendu aux trottoirs. Je me suis laissé au dedans.'); }},
-      {label:'Parler en paraboles — délire aux yeux des autres.', next:'A3_S5', effect(){ log('Mes images se sont imprimées sur des murs.'); }}
-    ]
-  },
-
-  A3_S5:{ act:3, title:'L’Autel d’Un',
-    text:`Seul devant un miroir sans cadre. L’Adversaire ne torture plus : il propose. Effacer la mémoire des fautes — être pur et applaudi. Ou garder la mémoire — marcher blessé mais vrai. Un troisième chemin murmure.`,
-    choices:[
-      {label:'Choisir l’oubli — purification absolue, icône.', next:'EP_OUBLI', effect(){ state.flags.aChoisiMemoire = false; log('J’ai choisi la statue. L’absence m’a dit merci.'); }},
-      {label:'Choisir la mémoire — purification active, honte portée.', next:'EP_MEMOIRE', effect(){ state.flags.aChoisiMemoire = true; log('J’ai gardé les blessures. Elles ont tenu lieu de balises.'); }},
-      {label:'Choisir l’incertitude — agir avec la faille apprivoisée.', next:'EP_INCERT', effect(){ state.flags.aChoisiMemoire = null; log('J’ai mis une laisse à l’ombre. Elle m’a appris la route.'); }}
-    ]
-  },
-
-  // ---------- ÉPILOGUES ----------
-  EP_OUBLI:{ act:4, title:'Épilogue — L’Icône',
-    text:`On m’a célébré. Nom gravé, visage lisse. La cité a dormi mieux. L’Adversaire s’est tu — puis a repris une autre voix, ailleurs.`,
-    choices:[{label:'Rejouer', next:'A1_S1', effect(){ restart(); }}]
-  },
-  EP_MEMOIRE:{ act:4, title:'Épilogue — La Fissure',
-    text:`Ils m’ont dit fou. Je n’ai rien prouvé, j’ai tenu. Dans la foule, un front s’est incliné : ce fut assez.`,
-    choices:[{label:'Rejouer', next:'A1_S1', effect(){ restart(); }}]
-  },
-  EP_INCERT:{ act:4, title:'Épilogue — L’Armure Fendue',
-    text:`Je n’ai ni gagné ni perdu. J’ai marché avec mes contradictions en ordre. Des dialogues ont poussé dans la fissure.`,
-    choices:[{label:'Rejouer', next:'A1_S1', effect(){ restart(); }}]
-  },
-};
-
-// ====== MOTEUR ======
-function render(){
-  const sc = S[state.scene];
-  if(!sc) return;
-
-  // act & tone
-  setAct(sc.act);
-  // titres & textes
-  el.act.textContent   = `ACTE ${sc.act}`;
-  el.scene.textContent = sc.title || '';
-  el.text.textContent  = sc.text || '';
-  el.adv.textContent   = sc.adv || '';
-  el.footer.textContent = `Scène : ${state.scene}`;
-
-  // choices
-  el.choices.innerHTML = '';
-  (sc.choices||[]).forEach((c,i)=>{
-    const b = document.createElement('button');
-    b.textContent = c.label;
-    b.addEventListener('click', ()=>{
-      push();
-      c.effect && c.effect();
-      state.scene = c.next;
-      flash();
-      render();
-    });
-    el.choices.appendChild(b);
-    // accessibilité clavier 1/2/3
-    b.setAttribute('data-choice', i+1);
-  });
-
-  // journal
-  el.journal.textContent = state.journal.slice(-6).join('\n');
-}
-
-function restart(){
-  state.act = 1;
-  state.scene = 'A1_S1';
-  state.tone = 'lucide';
-  state.stack = [];
-  state.flags = { desirDeReconnaissance:false, accepteLaHonte:false, doubleFormateur:false, aBriseLesMachines:false, aChoisiMemoire:null };
-  state.journal = [];
-  flash();
-  render();
-}
-
-// ====== NAVIGATION ======
-el.next.addEventListener('click', ()=>{
-  // avance par défaut : si une seule option, on la prend ; sinon on ne fait rien
-  const sc = S[state.scene];
-  if(sc && sc.choices && sc.choices.length===1){
-    const c = sc.choices[0]; push(); c.effect && c.effect(); state.scene = c.next; flash(); render();
-  }
-});
-el.back.addEventListener('click', pop);
-el.restart.addEventListener('click', restart);
-
-document.addEventListener('keydown', (e)=>{
-  if(e.key==='ArrowLeft'){ pop(); }
-  if(e.key==='ArrowRight'){
-    const sc = S[state.scene];
-    if(!sc) return;
-    if(sc.choices && sc.choices.length===1){
-      const c=sc.choices[0]; push(); c.effect && c.effect(); state.scene=c.next; flash(); render();
-    }
-  }
-  if(e.key==='r' || e.key==='R'){ restart(); }
-  // choix 1/2/3 via 1/2/3
-  if(['1','2','3','4','5'].includes(e.key)){
-    const i = Number(e.key)-1;
-    const sc = S[state.scene]; if(!sc||!sc.choices||!sc.choices[i]) return;
-    const c = sc.choices[i]; push(); c.effect && c.effect(); state.scene = c.next; flash(); render();
-  }
-});
-
-// ====== DÉMARRAGE ======
-render();
-</script>
 <body>
   <div class="app">
     <header>
@@ -522,5 +183,80 @@ render();
       <div id="footer"></div>
     </div>
   </div>
+
+  <!-- 🔗 Import du contenu narratif -->
+  <script src="data.js"></script>
+
+  <!-- 🔧 Script principal du moteur de jeu -->
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const state = {
+        current: "A1_S1",
+        history: [],
+        journal: [],
+        flags: {}
+      };
+
+      const els = {
+        act: document.getElementById("act"),
+        scene: document.getElementById("scene"),
+        text: document.getElementById("text"),
+        adv: document.getElementById("adv"),
+        choices: document.getElementById("choices"),
+        journal: document.getElementById("journal"),
+        tone: document.getElementById("pill-tone"),
+        actpill: document.getElementById("pill-act")
+      };
+
+      function render(id) {
+        const s = MemoireDeCendre[id];
+        if (!s) return;
+        state.current = id;
+        state.history.push(id);
+
+        els.act.textContent = "Acte " + s.act;
+        els.scene.textContent = s.title || "";
+        els.text.textContent = s.text || "";
+        els.adv.textContent = s.adv || "";
+        els.tone.textContent = "Tonalité : " + (s.tone || "—");
+        els.actpill.textContent = "Acte " + s.act;
+
+        els.choices.innerHTML = "";
+        (s.choices || []).forEach(c => {
+          const b = document.createElement("button");
+          b.textContent = c.label;
+          b.onclick = () => {
+            if (c.log) state.journal.push("→ " + c.log);
+            if (c.flag) state.flags[c.flag] = true;
+            render(c.next);
+          };
+          els.choices.appendChild(b);
+        });
+
+        els.journal.textContent = state.journal.slice(-3).join("\n");
+      }
+
+      document.getElementById("btn-restart").onclick = () => {
+        state.current = "A1_S1";
+        state.history = [];
+        state.journal = [];
+        render("A1_S1");
+      };
+
+      document.getElementById("btn-next").onclick = () => {
+        const s = MemoireDeCendre[state.current];
+        if (s && s.choices && s.choices.length > 0) render(s.choices[0].next);
+      };
+
+      document.getElementById("btn-back").onclick = () => {
+        if (state.history.length > 1) {
+          state.history.pop();
+          render(state.history.pop());
+        }
+      };
+
+      render("A1_S1");
+    });
+  </script>
 </body>
 </html>
